@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block content %}
+<span class="eyebrow">Ledger Intake</span>
+<h1>Import Transactions</h1>
+<hr class="section-rule">
+
+<p>Head Office transactions loaded: <strong>{{ ho_count }}</strong> &nbsp;|&nbsp; Branch transactions loaded: <strong>{{ branch_count }}</strong></p>
+
+<form method="post" enctype="multipart/form-data" class="form-box">
+  <label>Source Ledger</label>
+  <select name="source" required>
+    <option value="HEAD_OFFICE">Head Office</option>
+    <option value="BRANCH">Branch</option>
+  </select>
+
+  <label>File (CSV or Excel)</label>
+  <input type="file" name="file" accept=".csv,.xlsx,.xls" required>
+
+  <button class="btn" type="submit">Upload &amp; Import</button>
+</form>
+
+<p class="hint">
+  Required columns: reference_number, account_number, amount, transaction_date.
+  Optional: customer_name, branch, currency, narration.
+</p>
+
+<form method="post" action="{{ url_for('main.seed_demo') }}" class="form-box">
+  <label>Or skip file uploads entirely</label>
+  <button class="btn" type="submit">Load Demo Data (one click)</button>
+</form>
+
+<form method="post" action="{{ url_for('main.run_reconciliation') }}" class="form-box">
+  <label>Amount Tolerance (₦)</label>
+  <input type="number" step="0.01" name="tolerance" value="0" style="max-width:150px;">
+  <button class="btn btn-primary" type="submit">Run Reconciliation</button>
+</form>
+{% endblock %}

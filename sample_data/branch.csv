@@ -1,0 +1,18 @@
+reference_number,account_number,customer_name,branch,amount,currency,narration,transaction_date
+TXN1001,001001,Tunde Bakare,Victoria Island,5137.5,NGN,Fund transfer,2026-07-27
+TXN1002,001002,Amina Yusuf,Yaba,5275.0,NGN,Fund transfer,2026-07-26
+TXN1003,001003,Emeka Obi,Surulere,5412.5,NGN,Fund transfer,2026-07-28
+TXN1004,001004,Ngozi Eze,Apapa,5550.0,NGN,Fund transfer,2026-07-27
+TXN1005,001005,Segun Adebayo,Ikeja,5687.5,NGN,Fund transfer,2026-07-26
+TXN1006,001006,Fatima Bello,Victoria Island,5825.0,NGN,Fund transfer,2026-07-28
+TXN1007,001007,Ifeoma Nwosu,Yaba,5962.5,NGN,Fund transfer,2026-07-27
+TXN1008,001008,Chidinma Okafor,Surulere,6100.0,NGN,Fund transfer,2026-07-26
+TXN1009,001009,Tunde Bakare,Apapa,6237.5,NGN,Fund transfer,2026-07-28
+TXN1010,001010,Amina Yusuf,Ikeja,6375.0,NGN,Fund transfer,2026-07-27
+TXN1011,001011,Emeka Obi,Victoria Island,8800.0,NGN,POS settlement,2026-07-28
+TXN1012,001012,Ngozi Eze,Yaba,8850.0,NGN,POS settlement,2026-07-28
+TXN1013,001013,Segun Adebayo,Surulere,8900.0,NGN,POS settlement,2026-07-28
+TXN1017,001017,Tunde Bakare,Yaba,4540,NGN,Internet banking transfer,2026-07-28
+TXN1018,001018,Amina Yusuf,Surulere,4560,NGN,Internet banking transfer,2026-07-28
+TXN1099,001099,Segun Adebayo,Ikeja,1500.0,NGN,Duplicate test,2026-07-28
+TXN1099,001099,Segun Adebayo,Ikeja,1500.0,NGN,Duplicate test,2026-07-28

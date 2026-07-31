@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block content %}
+<span class="eyebrow">Overview</span>
+<h1>Dashboard</h1>
+<hr class="section-rule">
+
+<div class="cards">
+  <div class="card"><span class="card-value">{{ total_txns }}</span><span class="card-label">Total Imported Transactions</span></div>
+  <div class="card card-good"><span class="card-value">{{ counts.reconciled }}</span><span class="card-label">Reconciled</span></div>
+  <div class="card card-warn"><span class="card-value">{{ counts.amount_mismatch }}</span><span class="card-label">Amount Mismatch</span></div>
+  <div class="card card-warn"><span class="card-value">{{ counts.currency_mismatch }}</span><span class="card-label">Currency Mismatch</span></div>
+  <div class="card card-warn"><span class="card-value">{{ counts.date_mismatch }}</span><span class="card-label">Date Mismatch</span></div>
+  <div class="card card-bad"><span class="card-value">{{ counts.missing }}</span><span class="card-label">Missing Transactions</span></div>
+  <div class="card card-bad"><span class="card-value">{{ counts.duplicate }}</span><span class="card-label">Duplicates</span></div>
+</div>
+
+{% if has_results %}
+<div class="rate-box">
+  <strong>Reconciliation Rate:</strong> {{ reconciliation_rate }}%
+</div>
+{% endif %}
+
+<div class="actions">
+  <a class="btn" href="{{ url_for('main.upload') }}">Import Transactions</a>
+  <a class="btn" href="{{ url_for('main.results') }}">View Results</a>
+  <a class="btn" href="{{ url_for('main.report_pdf') }}">Export PDF</a>
+  <a class="btn" href="{{ url_for('main.report_csv') }}">Export CSV</a>
+  <form method="post" action="{{ url_for('main.reset_data') }}" onsubmit="return confirm('Clear all data?');" style="display:inline;">
+    <button class="btn btn-danger" type="submit">Reset Data</button>
+  </form>
+</div>
+{% endblock %}

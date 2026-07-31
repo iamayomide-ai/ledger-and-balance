@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block content %}
+<span class="eyebrow">Audit Trail</span>
+<h1>Reconciliation Results</h1>
+<hr class="section-rule">
+
+<div class="filters">
+  <a href="{{ url_for('main.results') }}" class="{{ 'active' if not status_filter }}">All</a>
+  {% for s in statuses %}
+    <a href="{{ url_for('main.results', status=s) }}" class="{{ 'active' if status_filter == s }}">{{ s.replace('_',' ').title() }}</a>
+  {% endfor %}
+</div>
+
+<table class="data-table">
+  <thead>
+    <tr>
+      <th>Reference</th>
+      <th>Status</th>
+      <th>Head Office ↔ Branch</th>
+      <th>Details</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for r in results %}
+    <tr class="row-{{ r.status|lower }}">
+      <td>{{ r.reference_number }}</td>
+      <td><span class="badge badge-{{ r.status|lower }}">{{ r.status.replace('_',' ').title() }}</span></td>
+      <td>
+        {% if r.status == 'RECONCILED' %}
+          ₦{{ "%.2f"|format(r.head_office_txn.amount) }} <span class="glyph glyph-good">=</span> ₦{{ "%.2f"|format(r.branch_txn.amount) }}
+        {% elif r.status == 'MISSING_TRANSACTION' %}
+          {% if r.head_office_txn %}₦{{ "%.2f"|format(r.head_office_txn.amount) }}{% else %}—{% endif %}
+          <span class="glyph glyph-bad">∅</span>
+          {% if r.branch_txn %}₦{{ "%.2f"|format(r.branch_txn.amount) }}{% else %}—{% endif %}
+        {% elif r.status == 'DUPLICATE' %}
+          {% if r.head_office_txn %}₦{{ "%.2f"|format(r.head_office_txn.amount) }}{% endif %}{% if r.branch_txn %}₦{{ "%.2f"|format(r.branch_txn.amount) }}{% endif %}
+          <span class="glyph glyph-dup">⧉</span> repeated ref
+        {% else %}
+          ₦{{ "%.2f"|format(r.head_office_txn.amount) if r.head_office_txn else "—" }} <span class="glyph glyph-warn">≠</span> ₦{{ "%.2f"|format(r.branch_txn.amount) if r.branch_txn else "—" }}
+        {% endif %}
+      </td>
+      <td>{{ r.details }}</td>
+    </tr>
+    {% else %}
+    <tr><td colspan="4">No results yet. Import transactions and run reconciliation.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}
