@@ -41,6 +41,20 @@ Visit http://localhost:5000
 4. Go to **Results** — filter by status to show each case type.
 5. Export a PDF/CSV report from the Dashboard.
 
+## Outcome
+
+The system successfully detects all four reconciliation cases — exact matches, 
+amount mismatches, missing transactions on either side, and duplicate entries 
+— against realistic multi-thousand-row datasets. What would normally take 
+hours of manual spreadsheet cross-checking now runs in seconds, with a 
+downloadable PDF/CSV report ready for audit review.
+
+## What I Learned
+
+Building the Reconciler engine around an abstract MatchRule base class made 
+it straightforward to add new comparison logic later without touching the 
+core matching flow — a small design decision that paid off once I started 
+testing edge cases like partial-amount matches and near-duplicate entries.
 ## Project Structure
 
 ```
