@@ -1,37 +1,220 @@
 {% extends "base.html" %}
 {% block content %}
-<span class="eyebrow">Ledger Intake</span>
-<h1>Import Transactions</h1>
-<hr class="section-rule">
+<div class="page-header">
+  <div>
+    <div class="eyebrow-badge">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+      Ledger Intake &amp; Ingestion
+    </div>
+    <h1 class="page-title">Import &amp; Reconcile Ledgers</h1>
+    <p class="page-description">Stage statements from Head Office and Branch to execute the OOP matching rules.</p>
+  </div>
+</div>
 
-<p>Head Office transactions loaded: <strong>{{ ho_count }}</strong> &nbsp;|&nbsp; Branch transactions loaded: <strong>{{ branch_count }}</strong></p>
+<!-- STAGED DATA COUNTER -->
+<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:16px; margin-bottom:24px;">
+  <div class="stat-card stat-primary">
+    <div class="stat-header">
+      <span class="stat-label">Head Office Staged Records</span>
+      <div class="stat-icon">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+      </div>
+    </div>
+    <div class="stat-value">{{ ho_count }}</div>
+    <div class="stat-subtext">Source: Transaction.SOURCE_HEAD_OFFICE</div>
+  </div>
 
-<form method="post" enctype="multipart/form-data" class="form-box">
-  <label>Source Ledger</label>
-  <select name="source" required>
-    <option value="HEAD_OFFICE">Head Office</option>
-    <option value="BRANCH">Branch</option>
-  </select>
+  <div class="stat-card stat-success">
+    <div class="stat-header">
+      <span class="stat-label">Branch Staged Records</span>
+      <div class="stat-icon">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>
+      </div>
+    </div>
+    <div class="stat-value">{{ branch_count }}</div>
+    <div class="stat-subtext">Source: Transaction.SOURCE_BRANCH</div>
+  </div>
+</div>
 
-  <label>File (CSV or Excel)</label>
-  <input type="file" name="file" accept=".csv,.xlsx,.xls" required>
+<!-- INGESTION GRID -->
+<div class="upload-grid">
+  <!-- FILE UPLOAD CARD -->
+  <div class="panel-card">
+    <div class="panel-header">
+      <div>
+        <div class="panel-title">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="12" y1="18" x2="12" y2="12"></line><line x1="9" y1="15" x2="15" y2="15"></line></svg>
+          Upload Ledger File
+        </div>
+        <div class="panel-subtitle">Parse and persist CSV or Excel statement</div>
+      </div>
+    </div>
 
-  <button class="btn" type="submit">Upload &amp; Import</button>
-</form>
+    <form method="post" enctype="multipart/form-data">
+      <div style="margin-bottom:16px;">
+        <label style="display:block; font-size:0.75rem; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:var(--text-secondary); margin-bottom:8px;">
+          Target Ledger Entity
+        </label>
+        <select name="source" required style="width:100%; padding:10px; background:var(--bg-main); border:1px solid var(--border-medium); border-radius:var(--radius-md); color:var(--text-primary); font-family:'Plus Jakarta Sans', sans-serif; font-size:0.9rem;">
+          <option value="HEAD_OFFICE">Head Office General Ledger (HO)</option>
+          <option value="BRANCH">Branch Subsidiary Ledger (BR)</option>
+        </select>
+      </div>
 
-<p class="hint">
-  Required columns: reference_number, account_number, amount, transaction_date.
-  Optional: customer_name, branch, currency, narration.
-</p>
+      <div class="dropzone-card" id="dropzone" onclick="document.getElementById('fileInput').click()">
+        <div class="dropzone-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+        </div>
+        <div class="dropzone-title">Click or Drop File Here</div>
+        <span class="dropzone-badge">CSV, XLSX, or XLS</span>
+        <input type="file" name="file" id="fileInput" class="dropzone-file-input" accept=".csv,.xlsx,.xls" required onchange="handleFileSelected(this)">
+        <div class="file-chosen-text" id="fileNameDisplay">No file selected yet</div>
+      </div>
 
-<form method="post" action="{{ url_for('main.seed_demo') }}" class="form-box">
-  <label>Or skip file uploads entirely</label>
-  <button class="btn" type="submit">Load Demo Data (one click)</button>
-</form>
+      <button class="btn btn-primary" type="submit" style="width:100%; margin-top:16px;">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 16 12 12 8 16"></polyline><line x1="12" y1="12" x2="12" y2="21"></line><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"></path><polyline points="16 16 12 12 8 16"></polyline></svg>
+        Parse &amp; Ingest File
+      </button>
+    </form>
+  </div>
 
-<form method="post" action="{{ url_for('main.run_reconciliation') }}" class="form-box">
-  <label>Amount Tolerance (₦)</label>
-  <input type="number" step="0.01" name="tolerance" value="0" style="max-width:150px;">
-  <button class="btn btn-primary" type="submit">Run Reconciliation</button>
-</form>
+  <!-- DEMO DATA CARD -->
+  <div class="panel-card" style="display:flex; flex-direction:column; justify-content:space-between;">
+    <div>
+      <div class="panel-header">
+        <div>
+          <div class="panel-title">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+            SIWES Defense Demo Dataset
+          </div>
+          <div class="panel-subtitle">Instant one-click synthetic data injection</div>
+        </div>
+      </div>
+
+      <p style="font-size:0.86rem; color:var(--text-secondary); margin-bottom:14px; line-height:1.5;">
+        For live presentation, avoid file system risks by loading the pre-configured defense test suite directly into SQLite:
+      </p>
+
+      <ul style="font-size:0.82rem; color:var(--text-muted); list-style:none; display:flex; flex-direction:column; gap:8px; margin-bottom:20px;">
+        <li style="display:flex; align-items:center; gap:8px;">
+          <span style="color:var(--status-reconciled); font-weight:700;">&bull;</span>
+          <strong>10 Clean Matches:</strong> Identical ref, amount, date, and currency.
+        </li>
+        <li style="display:flex; align-items:center; gap:8px;">
+          <span style="color:var(--status-mismatch); font-weight:700;">&bull;</span>
+          <strong>3 Amount Discrepancies:</strong> Simulating uncredited fees / POS differences.
+        </li>
+        <li style="display:flex; align-items:center; gap:8px;">
+          <span style="color:var(--status-missing); font-weight:700;">&bull;</span>
+          <strong>5 Missing Records:</strong> Simulating in-transit transfers or unpresented cheques.
+        </li>
+        <li style="display:flex; align-items:center; gap:8px;">
+          <span style="color:var(--status-duplicate); font-weight:700;">&bull;</span>
+          <strong>2 Duplicates:</strong> Demonstrating ledger collision detection.
+        </li>
+      </ul>
+    </div>
+
+    <form method="post" action="{{ url_for('main.seed_demo') }}">
+      <button class="btn btn-secondary" type="submit" style="width:100%;">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2v6h-6"></path><path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path><path d="M3 22v-6h6"></path><path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path></svg>
+        Load SIWES Demo Suite (1-Click)
+      </button>
+    </form>
+  </div>
+</div>
+
+<!-- RECONCILIATION ENGINE TRIGGER -->
+<div class="recon-control-panel">
+  <div class="panel-header" style="margin-bottom:14px;">
+    <div>
+      <div class="panel-title">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+        Execute Reconciliation Engine
+      </div>
+      <div class="panel-subtitle">Configure tolerance parameters and evaluate matching rules across all staged records</div>
+    </div>
+  </div>
+
+  <form method="post" action="{{ url_for('main.run_reconciliation') }}">
+    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px;">
+      <div>
+        <label style="display:block; font-size:0.75rem; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:var(--text-secondary); margin-bottom:8px;">
+          Amount Variance Tolerance (&plusmn; ₦)
+        </label>
+        <div class="tolerance-bar">
+          <div class="tolerance-input-wrapper">
+            <span class="tolerance-prefix">&#8358;</span>
+            <input type="number" step="0.01" min="0" name="tolerance" id="toleranceInput" value="0.00" class="tolerance-input">
+          </div>
+          <div style="display:flex; gap:6px;">
+            <button type="button" class="tolerance-preset" onclick="setTolerance(0)">&#8358;0.00 (Exact)</button>
+            <button type="button" class="tolerance-preset" onclick="setTolerance(10)">&#8358;10.00</button>
+            <button type="button" class="tolerance-preset" onclick="setTolerance(50)">&#8358;50.00</button>
+            <button type="button" class="tolerance-preset" onclick="setTolerance(100)">&#8358;100.00</button>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <button class="btn btn-success" type="submit" style="padding:12px 28px; font-size:0.95rem;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+          Run Reconciliation Engine
+        </button>
+      </div>
+    </div>
+  </form>
+</div>
+
+<!-- SCHEMA HELP -->
+<div style="background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:var(--radius-lg); padding:18px 24px; font-size:0.8rem;">
+  <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px; color:var(--text-secondary); font-weight:700; text-transform:uppercase; letter-spacing:0.06em; font-size:0.72rem;">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+    Expected CSV / Excel Column Header Specification
+  </div>
+  <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;">
+    <span style="font-family:'JetBrains Mono', monospace; font-size:0.74rem; background:var(--bg-surface-elevated); padding:3px 8px; border-radius:4px; border:1px solid var(--border-medium); color:#38BDF8;">reference_number*</span>
+    <span style="font-family:'JetBrains Mono', monospace; font-size:0.74rem; background:var(--bg-surface-elevated); padding:3px 8px; border-radius:4px; border:1px solid var(--border-medium); color:#38BDF8;">account_number*</span>
+    <span style="font-family:'JetBrains Mono', monospace; font-size:0.74rem; background:var(--bg-surface-elevated); padding:3px 8px; border-radius:4px; border:1px solid var(--border-medium); color:#38BDF8;">amount*</span>
+    <span style="font-family:'JetBrains Mono', monospace; font-size:0.74rem; background:var(--bg-surface-elevated); padding:3px 8px; border-radius:4px; border:1px solid var(--border-medium); color:#38BDF8;">transaction_date*</span>
+    <span style="font-family:'JetBrains Mono', monospace; font-size:0.74rem; background:var(--bg-surface-elevated); padding:3px 8px; border-radius:4px; border:1px solid var(--border-subtle); color:var(--text-muted);">customer_name</span>
+    <span style="font-family:'JetBrains Mono', monospace; font-size:0.74rem; background:var(--bg-surface-elevated); padding:3px 8px; border-radius:4px; border:1px solid var(--border-subtle); color:var(--text-muted);">branch</span>
+    <span style="font-family:'JetBrains Mono', monospace; font-size:0.74rem; background:var(--bg-surface-elevated); padding:3px 8px; border-radius:4px; border:1px solid var(--border-subtle); color:var(--text-muted);">currency</span>
+    <span style="font-family:'JetBrains Mono', monospace; font-size:0.74rem; background:var(--bg-surface-elevated); padding:3px 8px; border-radius:4px; border:1px solid var(--border-subtle); color:var(--text-muted);">narration</span>
+  </div>
+</div>
+
+<script>
+  function handleFileSelected(input) {
+    const display = document.getElementById('fileNameDisplay');
+    if (input.files && input.files[0]) {
+      display.textContent = 'Selected: ' + input.files[0].name + ' (' + (input.files[0].size / 1024).toFixed(1) + ' KB)';
+      display.style.color = 'var(--status-reconciled)';
+    } else {
+      display.textContent = 'No file selected yet';
+      display.style.color = 'var(--text-muted)';
+    }
+  }
+
+  function setTolerance(val) {
+    document.getElementById('toleranceInput').value = parseFloat(val).toFixed(2);
+  }
+
+  // Drag & drop highlight
+  const dropzone = document.getElementById('dropzone');
+  ['dragenter', 'dragover'].forEach(name => {
+    dropzone.addEventListener(name, (e) => { e.preventDefault(); dropzone.classList.add('dragover'); }, false);
+  });
+  ['dragleave', 'drop'].forEach(name => {
+    dropzone.addEventListener(name, (e) => { e.preventDefault(); dropzone.classList.remove('dragover'); }, false);
+  });
+  dropzone.addEventListener('drop', (e) => {
+    const dt = e.dataTransfer;
+    const files = dt.files;
+    if (files.length) {
+      document.getElementById('fileInput').files = files;
+      handleFileSelected(document.getElementById('fileInput'));
+    }
+  });
+</script>
 {% endblock %}

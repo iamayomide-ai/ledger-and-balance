@@ -1,49 +1,313 @@
 {% extends "base.html" %}
 {% block content %}
-<span class="eyebrow">Audit Trail</span>
-<h1>Reconciliation Results</h1>
-<hr class="section-rule">
-
-<div class="filters">
-  <a href="{{ url_for('main.results') }}" class="{{ 'active' if not status_filter }}">All</a>
-  {% for s in statuses %}
-    <a href="{{ url_for('main.results', status=s) }}" class="{{ 'active' if status_filter == s }}">{{ s.replace('_',' ').title() }}</a>
-  {% endfor %}
+<div class="page-header">
+  <div>
+    <div class="eyebrow-badge">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+      Audit Trail
+    </div>
+    <h1 class="page-title">Reconciliation Results</h1>
+    <p class="page-description">Detailed ledger matching log with automated discrepancy detection and variance breakdowns.</p>
+  </div>
+  <div class="action-toolbar">
+    <a class="btn btn-secondary btn-sm" href="{{ url_for('main.report_pdf') }}">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+      Download PDF Report
+    </a>
+    <a class="btn btn-secondary btn-sm" href="{{ url_for('main.report_csv') }}">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+      Export CSV
+    </a>
+    <a class="btn btn-primary btn-sm" href="{{ url_for('main.upload') }}">
+      Re-run Engine
+    </a>
+  </div>
 </div>
 
-<table class="data-table">
-  <thead>
-    <tr>
-      <th>Reference</th>
-      <th>Status</th>
-      <th>Head Office ↔ Branch</th>
-      <th>Details</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for r in results %}
-    <tr class="row-{{ r.status|lower }}">
-      <td>{{ r.reference_number }}</td>
-      <td><span class="badge badge-{{ r.status|lower }}">{{ r.status.replace('_',' ').title() }}</span></td>
-      <td>
-        {% if r.status == 'RECONCILED' %}
-          ₦{{ "%.2f"|format(r.head_office_txn.amount) }} <span class="glyph glyph-good">=</span> ₦{{ "%.2f"|format(r.branch_txn.amount) }}
-        {% elif r.status == 'MISSING_TRANSACTION' %}
-          {% if r.head_office_txn %}₦{{ "%.2f"|format(r.head_office_txn.amount) }}{% else %}—{% endif %}
-          <span class="glyph glyph-bad">∅</span>
-          {% if r.branch_txn %}₦{{ "%.2f"|format(r.branch_txn.amount) }}{% else %}—{% endif %}
-        {% elif r.status == 'DUPLICATE' %}
-          {% if r.head_office_txn %}₦{{ "%.2f"|format(r.head_office_txn.amount) }}{% endif %}{% if r.branch_txn %}₦{{ "%.2f"|format(r.branch_txn.amount) }}{% endif %}
-          <span class="glyph glyph-dup">⧉</span> repeated ref
-        {% else %}
-          ₦{{ "%.2f"|format(r.head_office_txn.amount) if r.head_office_txn else "—" }} <span class="glyph glyph-warn">≠</span> ₦{{ "%.2f"|format(r.branch_txn.amount) if r.branch_txn else "—" }}
+<!-- FILTERS AND LIVE SEARCH -->
+<div class="filter-bar">
+  <div class="filter-pills">
+    <a href="{{ url_for('main.results') }}" class="filter-pill {{ 'active' if not status_filter }}">
+      All Results
+    </a>
+    {% for s in statuses %}
+      <a href="{{ url_for('main.results', status=s) }}" class="filter-pill {{ 'active' if status_filter == s }}">
+        {% if s == 'RECONCILED' %}
+          <span style="color:var(--status-reconciled);">&bull;</span>
+        {% elif s == 'AMOUNT_MISMATCH' or s == 'CURRENCY_MISMATCH' or s == 'DATE_MISMATCH' %}
+          <span style="color:var(--status-mismatch);">&bull;</span>
+        {% elif s == 'MISSING_TRANSACTION' %}
+          <span style="color:var(--status-missing);">&bull;</span>
+        {% elif s == 'DUPLICATE' %}
+          <span style="color:var(--status-duplicate);">&bull;</span>
         {% endif %}
-      </td>
-      <td>{{ r.details }}</td>
-    </tr>
-    {% else %}
-    <tr><td colspan="4">No results yet. Import transactions and run reconciliation.</td></tr>
+        {{ s.replace('_',' ').title() }}
+      </a>
     {% endfor %}
-  </tbody>
-</table>
+  </div>
+
+  <div class="search-input-wrapper">
+    <span class="search-icon">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+    </span>
+    <input type="text" id="tableSearch" class="search-input" placeholder="Search reference, details, amount..." onkeyup="filterTable()">
+  </div>
+</div>
+
+<!-- DATA TABLE -->
+<div class="table-card">
+  <table class="data-table" id="resultsTable">
+    <thead>
+      <tr>
+        <th style="width: 140px;">Reference #</th>
+        <th style="width: 170px;">Status</th>
+        <th>Head Office ↔ Branch Ledger Comparison</th>
+        <th>Audit Diagnostic Details</th>
+        <th style="width: 100px; text-align: center;">Inspect</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in results %}
+      <tr class="result-row" 
+          onclick="openInspectModal(this)"
+          data-ref="{{ r.reference_number }}"
+          data-status="{{ r.status }}"
+          data-diff="{{ '%.2f'|format(r.amount_difference or 0) }}"
+          data-details="{{ r.details or '' }}"
+          data-missing="{{ r.missing_from or '' }}"
+          data-ho-acc="{{ r.head_office_txn.account_number if r.head_office_txn else '—' }}"
+          data-ho-name="{{ r.head_office_txn.customer_name if r.head_office_txn else '—' }}"
+          data-ho-branch="{{ r.head_office_txn.branch if r.head_office_txn else '—' }}"
+          data-ho-amt="{{ '%.2f'|format(r.head_office_txn.amount) if r.head_office_txn else '—' }}"
+          data-ho-curr="{{ r.head_office_txn.currency if r.head_office_txn else '—' }}"
+          data-ho-date="{{ r.head_office_txn.transaction_date if r.head_office_txn else '—' }}"
+          data-ho-narration="{{ r.head_office_txn.narration if r.head_office_txn else '—' }}"
+          data-br-acc="{{ r.branch_txn.account_number if r.branch_txn else '—' }}"
+          data-br-name="{{ r.branch_txn.customer_name if r.branch_txn else '—' }}"
+          data-br-branch="{{ r.branch_txn.branch if r.branch_txn else '—' }}"
+          data-br-amt="{{ '%.2f'|format(r.branch_txn.amount) if r.branch_txn else '—' }}"
+          data-br-curr="{{ r.branch_txn.currency if r.branch_txn else '—' }}"
+          data-br-date="{{ r.branch_txn.transaction_date if r.branch_txn else '—' }}"
+          data-br-narration="{{ r.branch_txn.narration if r.branch_txn else '—' }}">
+        <td>
+          <span style="font-family:'JetBrains Mono', monospace; font-weight:600; color:var(--text-primary);">{{ r.reference_number }}</span>
+        </td>
+        <td>
+          <span class="status-badge badge-{{ r.status|lower }}">
+            {{ r.status.replace('_',' ').title() }}
+          </span>
+        </td>
+        <td>
+          <div class="ledger-chip">
+            {% if r.status == 'RECONCILED' %}
+              <span>&#8358;{{ "%.2f"|format(r.head_office_txn.amount) }}</span>
+              <span class="glyph-op match">=</span>
+              <span>&#8358;{{ "%.2f"|format(r.branch_txn.amount) }}</span>
+            {% elif r.status == 'MISSING_TRANSACTION' %}
+              {% if r.head_office_txn %}
+                <span>&#8358;{{ "%.2f"|format(r.head_office_txn.amount) }}</span>
+              {% else %}
+                <span style="color:var(--text-muted);">&mdash;</span>
+              {% endif %}
+              <span class="glyph-op none">&empty;</span>
+              {% if r.branch_txn %}
+                <span>&#8358;{{ "%.2f"|format(r.branch_txn.amount) }}</span>
+              {% else %}
+                <span style="color:var(--text-muted);">&mdash;</span>
+              {% endif %}
+              <span style="font-size:0.7rem; color:var(--status-missing); margin-left:4px;">(Missing from {{ r.missing_from }})</span>
+            {% elif r.status == 'DUPLICATE' %}
+              {% if r.head_office_txn %}<span>&#8358;{{ "%.2f"|format(r.head_office_txn.amount) }}</span>{% endif %}
+              {% if r.branch_txn %}<span>&#8358;{{ "%.2f"|format(r.branch_txn.amount) }}</span>{% endif %}
+              <span class="glyph-op dup">&#x29C9;</span>
+              <span style="font-size:0.7rem; color:var(--status-duplicate); margin-left:4px;">Duplicate Reference</span>
+            {% else %}
+              <span>&#8358;{{ "%.2f"|format(r.head_office_txn.amount) if r.head_office_txn else "—" }}</span>
+              <span class="glyph-op diff">&ne;</span>
+              <span>&#8358;{{ "%.2f"|format(r.branch_txn.amount) if r.branch_txn else "—" }}</span>
+              {% if r.amount_difference and r.amount_difference > 0 %}
+                <span class="diff-tag">&plusmn;&#8358;{{ "%.2f"|format(r.amount_difference) }}</span>
+              {% endif %}
+            {% endif %}
+          </div>
+        </td>
+        <td style="color:var(--text-secondary); font-size:0.83rem;">
+          {{ r.details }}
+        </td>
+        <td style="text-align: center;">
+          <button type="button" class="btn btn-secondary btn-sm" style="padding: 4px 8px; font-size: 0.72rem;" onclick="event.stopPropagation(); openInspectModal(this.closest('tr'));">
+            Inspect
+          </button>
+        </td>
+      </tr>
+      {% else %}
+      <tr>
+        <td colspan="5" style="text-align:center; padding: 36px 16px; color:var(--text-muted);">
+          No reconciliation records found. <a href="{{ url_for('main.upload') }}" style="color:var(--brand-primary);">Import transactions</a> or run reconciliation to see results.
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<!-- AUDIT INSPECTOR MODAL -->
+<div class="modal-backdrop" id="inspectModal" onclick="closeInspectModal(event)">
+  <div class="modal-dialog" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <div>
+        <div style="font-size:0.75rem; text-transform:uppercase; letter-spacing:0.08em; color:var(--brand-primary); font-weight:700; font-family:'JetBrains Mono', monospace;">
+          Transaction Audit Inspector
+        </div>
+        <div class="modal-title" id="modalRefTitle">Ref #TXN1001</div>
+      </div>
+      <button class="modal-close" onclick="closeInspectModal()">&times;</button>
+    </div>
+
+    <div class="modal-body">
+      <!-- STATUS & RULE BANNER -->
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; padding-bottom:12px; border-bottom:1px solid var(--border-subtle);">
+        <div>
+          <span class="status-badge" id="modalStatusBadge">STATUS</span>
+        </div>
+        <div style="font-family:'JetBrains Mono', monospace; font-size:0.8rem; color:var(--text-secondary);">
+          Variance: <strong id="modalVariance" style="color:var(--status-mismatch);">&#8358;0.00</strong>
+        </div>
+      </div>
+
+      <!-- SIDE-BY-SIDE LEDGER COMPARISON -->
+      <div class="modal-ledger-grid">
+        <!-- HEAD OFFICE -->
+        <div class="modal-side-card">
+          <div class="modal-side-title" style="color:#38BDF8;">Head Office Record</div>
+          <div class="modal-field">
+            <span class="modal-field-label">Account #:</span>
+            <span class="modal-field-value" id="modalHoAcc">—</span>
+          </div>
+          <div class="modal-field">
+            <span class="modal-field-label">Customer:</span>
+            <span class="modal-field-value" id="modalHoName">—</span>
+          </div>
+          <div class="modal-field">
+            <span class="modal-field-label">Branch:</span>
+            <span class="modal-field-value" id="modalHoBranch">—</span>
+          </div>
+          <div class="modal-field">
+            <span class="modal-field-label">Date:</span>
+            <span class="modal-field-value" id="modalHoDate">—</span>
+          </div>
+          <div class="modal-field">
+            <span class="modal-field-label">Amount:</span>
+            <span class="modal-field-value" id="modalHoAmt" style="color:var(--brand-primary); font-size:0.95rem;">—</span>
+          </div>
+          <div class="modal-field" style="margin-top:8px;">
+            <span class="modal-field-label">Narration:</span>
+            <span class="modal-field-value" id="modalHoNarration" style="font-size:0.75rem; max-width:180px; text-align:right;">—</span>
+          </div>
+        </div>
+
+        <!-- BRANCH -->
+        <div class="modal-side-card">
+          <div class="modal-side-title" style="color:var(--status-reconciled);">Branch Record</div>
+          <div class="modal-field">
+            <span class="modal-field-label">Account #:</span>
+            <span class="modal-field-value" id="modalBrAcc">—</span>
+          </div>
+          <div class="modal-field">
+            <span class="modal-field-label">Customer:</span>
+            <span class="modal-field-value" id="modalBrName">—</span>
+          </div>
+          <div class="modal-field">
+            <span class="modal-field-label">Branch:</span>
+            <span class="modal-field-value" id="modalBrBranch">—</span>
+          </div>
+          <div class="modal-field">
+            <span class="modal-field-label">Date:</span>
+            <span class="modal-field-value" id="modalBrDate">—</span>
+          </div>
+          <div class="modal-field">
+            <span class="modal-field-label">Amount:</span>
+            <span class="modal-field-value" id="modalBrAmt" style="color:var(--status-reconciled); font-size:0.95rem;">—</span>
+          </div>
+          <div class="modal-field" style="margin-top:8px;">
+            <span class="modal-field-label">Narration:</span>
+            <span class="modal-field-value" id="modalBrNarration" style="font-size:0.75rem; max-width:180px; text-align:right;">—</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- DIAGNOSTIC EVALUATION BOX -->
+      <div class="modal-eval-rule">
+        <div style="font-size:0.75rem; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:var(--brand-primary); margin-bottom:4px;">
+          Engine Evaluation &bull; OOP Strategy Pattern
+        </div>
+        <div id="modalDetailsText" style="color:var(--text-secondary); line-height:1.4;">
+          Diagnostic details will appear here.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function openInspectModal(row) {
+    if (!row || !row.dataset) return;
+    const d = row.dataset;
+    
+    document.getElementById('modalRefTitle').textContent = 'Reference: ' + d.ref;
+    
+    const badge = document.getElementById('modalStatusBadge');
+    badge.className = 'status-badge badge-' + d.status.toLowerCase();
+    badge.textContent = d.status.replace(/_/g, ' ');
+    
+    document.getElementById('modalVariance').textContent = '₦' + d.diff;
+    
+    document.getElementById('modalHoAcc').textContent = d.hoAcc;
+    document.getElementById('modalHoName').textContent = d.hoName;
+    document.getElementById('modalHoBranch').textContent = d.hoBranch;
+    document.getElementById('modalHoDate').textContent = d.hoDate;
+    document.getElementById('modalHoAmt').textContent = d.hoAmt !== '—' ? '₦' + d.hoAmt : '—';
+    document.getElementById('modalHoNarration').textContent = d.hoNarration;
+
+    document.getElementById('modalBrAcc').textContent = d.brAcc;
+    document.getElementById('modalBrName').textContent = d.brName;
+    document.getElementById('modalBrBranch').textContent = d.brBranch;
+    document.getElementById('modalBrDate').textContent = d.brDate;
+    document.getElementById('modalBrAmt').textContent = d.brAmt !== '—' ? '₦' + d.brAmt : '—';
+    document.getElementById('modalBrNarration').textContent = d.brNarration;
+
+    let ruleExplanation = d.details;
+    if (d.status === 'RECONCILED') {
+      ruleExplanation += ' (Evaluated via ExactMatchRule: Reference and amount matched within configured tolerance)';
+    } else if (d.status === 'AMOUNT_MISMATCH') {
+      ruleExplanation += ' (Evaluated via AmountMismatchRule: Reference exists on both ledgers, but amounts differ by ₦' + d.diff + ')';
+    } else if (d.status === 'MISSING_TRANSACTION') {
+      ruleExplanation += ' (Evaluated via Reconciler._record_missing: Transaction exists in one ledger but has no corresponding record in the other)';
+    } else if (d.status === 'DUPLICATE') {
+      ruleExplanation += ' (Evaluated via Reconciler._record_duplicates: Multiple records found with this reference number)';
+    }
+    document.getElementById('modalDetailsText').textContent = ruleExplanation;
+
+    document.getElementById('inspectModal').classList.add('open');
+  }
+
+  function closeInspectModal(e) {
+    document.getElementById('inspectModal').classList.remove('open');
+  }
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      closeInspectModal();
+    }
+  });
+
+  function filterTable() {
+    const input = document.getElementById('tableSearch').value.toLowerCase();
+    const rows = document.querySelectorAll('#resultsTable tbody tr.result-row');
+    rows.forEach(row => {
+      const text = row.textContent.toLowerCase();
+      row.style.display = text.includes(input) ? '' : 'none';
+    });
+  }
+</script>
 {% endblock %}

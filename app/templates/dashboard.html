@@ -1,32 +1,294 @@
 {% extends "base.html" %}
 {% block content %}
-<span class="eyebrow">Overview</span>
-<h1>Dashboard</h1>
-<hr class="section-rule">
+<div class="page-header">
+  <div>
+    <div class="eyebrow-badge">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+      Executive Overview
+    </div>
+    <h1 class="page-title">Reconciliation Dashboard</h1>
+    <p class="page-description">Pairwise ledger reconciliation engine comparing Head Office and Branch transactions.</p>
+  </div>
+  <div class="action-toolbar">
+    <a class="btn btn-secondary btn-sm" href="{{ url_for('main.report_pdf') }}">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+      Audit PDF
+    </a>
+    <a class="btn btn-secondary btn-sm" href="{{ url_for('main.report_csv') }}">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+      Export CSV
+    </a>
+    <a class="btn btn-primary btn-sm" href="{{ url_for('main.upload') }}">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+      Import / Run
+    </a>
+  </div>
+</div>
 
-<div class="cards">
-  <div class="card"><span class="card-value">{{ total_txns }}</span><span class="card-label">Total Imported Transactions</span></div>
-  <div class="card card-good"><span class="card-value">{{ counts.reconciled }}</span><span class="card-label">Reconciled</span></div>
-  <div class="card card-warn"><span class="card-value">{{ counts.amount_mismatch }}</span><span class="card-label">Amount Mismatch</span></div>
-  <div class="card card-warn"><span class="card-value">{{ counts.currency_mismatch }}</span><span class="card-label">Currency Mismatch</span></div>
-  <div class="card card-warn"><span class="card-value">{{ counts.date_mismatch }}</span><span class="card-label">Date Mismatch</span></div>
-  <div class="card card-bad"><span class="card-value">{{ counts.missing }}</span><span class="card-label">Missing Transactions</span></div>
-  <div class="card card-bad"><span class="card-value">{{ counts.duplicate }}</span><span class="card-label">Duplicates</span></div>
+<!-- OOP ARCHITECTURE DEFENSE SHOWCASE -->
+<div class="defense-oop-banner">
+  <div class="defense-header" onclick="const g = document.getElementById('oopGrid'); g.style.display = g.style.display === 'none' ? 'grid' : 'none';">
+    <div style="display:flex; align-items:center; gap:8px;">
+      <span class="defense-badge">SIWES Defense</span>
+      <strong style="font-size:1.05rem; letter-spacing:-0.01em;">Object-Oriented Architecture (4 Core Principles in this Project)</strong>
+    </div>
+    <span style="font-size:0.75rem; color:var(--brand-primary); font-weight:600;">[Click to Toggle Details]</span>
+  </div>
+
+  <div class="oop-grid" id="oopGrid">
+    <div class="oop-card oop-encap">
+      <div class="oop-title">
+        <span>1. Encapsulation</span>
+        <span class="oop-class-tag">Transaction &amp; Result</span>
+      </div>
+      <p class="oop-desc">
+        Data integrity is guarded in <code>Transaction</code> &amp; <code>ReconciliationResult</code> models. Internal states, foreign keys, and audit attributes are protected from raw tampering.
+      </p>
+    </div>
+
+    <div class="oop-card oop-abstr">
+      <div class="oop-title">
+        <span>2. Abstraction</span>
+        <span class="oop-class-tag">MatchRule(ABC)</span>
+      </div>
+      <p class="oop-desc">
+        The abstract base class defines a standard <code>evaluate()</code> interface contract. The engine never needs to know specific matching mechanics.
+      </p>
+    </div>
+
+    <div class="oop-card oop-inher">
+      <div class="oop-title">
+        <span>3. Inheritance</span>
+        <span class="oop-class-tag">Derived Rules</span>
+      </div>
+      <p class="oop-desc">
+        Specialized rule classes (<code>ExactMatchRule</code>, <code>AmountMismatchRule</code>, <code>CurrencyMismatchRule</code>, <code>DateMismatchRule</code>) inherit structure from <code>MatchRule</code>.
+      </p>
+    </div>
+
+    <div class="oop-card oop-polym">
+      <div class="oop-title">
+        <span>4. Polymorphism</span>
+        <span class="oop-class-tag">Strategy Pattern</span>
+      </div>
+      <p class="oop-desc">
+        The <code>Reconciler</code> executes different rule instances through dynamic dispatch: calling <code>rule.evaluate()</code> polymorphically at runtime.
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- STATS CARDS -->
+<div class="stats-grid">
+  <div class="stat-card stat-primary">
+    <div class="stat-header">
+      <span class="stat-label">Total Transactions</span>
+      <div class="stat-icon">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path></svg>
+      </div>
+    </div>
+    <div class="stat-value">{{ total_txns }}</div>
+    <div class="stat-subtext">Across HO &amp; Branch Ledgers</div>
+  </div>
+
+  <div class="stat-card stat-success">
+    <div class="stat-header">
+      <span class="stat-label">Reconciled</span>
+      <div class="stat-icon">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+      </div>
+    </div>
+    <div class="stat-value">{{ counts.reconciled }}</div>
+    <div class="stat-subtext">Matched within tolerance</div>
+  </div>
+
+  <div class="stat-card stat-warning">
+    <div class="stat-header">
+      <span class="stat-label">Amount Mismatches</span>
+      <div class="stat-icon">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+      </div>
+    </div>
+    <div class="stat-value">{{ counts.amount_mismatch }}</div>
+    <div class="stat-subtext">Value discrepancies flagged</div>
+  </div>
+
+  <div class="stat-card stat-warning">
+    <div class="stat-header">
+      <span class="stat-label">Currency / Date</span>
+      <div class="stat-icon">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+      </div>
+    </div>
+    <div class="stat-value">{{ counts.currency_mismatch + counts.date_mismatch }}</div>
+    <div class="stat-subtext">Metadata variances</div>
+  </div>
+
+  <div class="stat-card stat-danger">
+    <div class="stat-header">
+      <span class="stat-label">Missing Entries</span>
+      <div class="stat-icon">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
+      </div>
+    </div>
+    <div class="stat-value">{{ counts.missing }}</div>
+    <div class="stat-subtext">One-sided transactions</div>
+  </div>
+
+  <div class="stat-card stat-purple">
+    <div class="stat-header">
+      <span class="stat-label">Duplicates</span>
+      <div class="stat-icon">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+      </div>
+    </div>
+    <div class="stat-value">{{ counts.duplicate }}</div>
+    <div class="stat-subtext">Repeated ref numbers</div>
+  </div>
+</div>
+
+<!-- ANALYTICS VISUALIZATIONS -->
+<div class="analytics-section">
+  <div class="panel-card">
+    <div class="panel-header">
+      <div>
+        <div class="panel-title">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path><path d="M22 12A10 10 0 0 0 12 2v10z"></path></svg>
+          Reconciliation Audit Distribution
+        </div>
+        <div class="panel-subtitle">Visual distribution of outcomes across all processed pairs</div>
+      </div>
+    </div>
+    <div style="position: relative; height: 260px; display: flex; align-items: center; justify-content: center;">
+      {% if has_results %}
+        <canvas id="auditChart"></canvas>
+      {% else %}
+        <div style="text-align: center; color: var(--text-muted);">
+          <p>No audit results yet. Load demo data or import ledgers to view breakdown.</p>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="panel-card" style="display: flex; flex-direction: column; justify-content: space-between;">
+    <div class="panel-header">
+      <div>
+        <div class="panel-title">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 14 14"></polyline></svg>
+          Reconciliation Health
+        </div>
+        <div class="panel-subtitle">System alignment index</div>
+      </div>
+    </div>
+
+    <div class="rate-container">
+      {% if has_results %}
+        <div class="rate-percentage">
+          {{ reconciliation_rate }}<small>%</small>
+        </div>
+        <span style="font-size:0.75rem; text-transform:uppercase; letter-spacing:0.08em; color:var(--text-secondary); font-weight:600;">
+          Success Rate
+        </span>
+        <div class="rate-progress-bar">
+          <div class="rate-progress-fill" style="width: {{ reconciliation_rate }}%;"></div>
+        </div>
+        <p style="font-size:0.8rem; color:var(--text-muted); margin-top:8px;">
+          {{ counts.reconciled }} of {{ counts.reconciled + counts.amount_mismatch + counts.currency_mismatch + counts.date_mismatch + counts.missing + counts.duplicate }} results reconciled cleanly.
+        </p>
+      {% else %}
+        <div style="color:var(--text-muted); font-size:0.85rem; padding: 20px 0;">
+          Reconciliation has not been executed yet.
+        </div>
+      {% endif %}
+    </div>
+
+    <div style="border-top: 1px solid var(--border-subtle); padding-top: 14px; margin-top: 10px;">
+      <a class="btn btn-secondary" style="width: 100%;" href="{{ url_for('main.results') }}">
+        Open Full Audit Trail &rarr;
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- BOTTOM ACTIONS -->
+<div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-top: 10px; background:var(--bg-surface); padding:16px 20px; border-radius:var(--radius-lg); border:1px solid var(--border-subtle);">
+  <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+    <form method="post" action="{{ url_for('main.seed_demo') }}">
+      <button class="btn btn-secondary btn-sm" type="submit">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+        Reload SIWES Demo Dataset
+      </button>
+    </form>
+    <a class="btn btn-secondary btn-sm" href="{{ url_for('main.results') }}">View Audit Table</a>
+  </div>
+
+  <form method="post" action="{{ url_for('main.reset_data') }}" onsubmit="return confirm('Clear all database transactions and reconciliation results?');">
+    <button class="btn btn-danger-outline btn-sm" type="submit">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+      Reset Database
+    </button>
+  </form>
 </div>
 
 {% if has_results %}
-<div class="rate-box">
-  <strong>Reconciliation Rate:</strong> {{ reconciliation_rate }}%
-</div>
+<script>
+  document.addEventListener("DOMContentLoaded", function() {
+    const ctx = document.getElementById('auditChart');
+    if (!ctx) return;
+    
+    new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: ['Reconciled', 'Amount Mismatch', 'Currency/Date', 'Missing', 'Duplicates'],
+        datasets: [{
+          data: [
+            {{ counts.reconciled }},
+            {{ counts.amount_mismatch }},
+            {{ counts.currency_mismatch + counts.date_mismatch }},
+            {{ counts.missing }},
+            {{ counts.duplicate }}
+          ],
+          backgroundColor: [
+            '#10B981',
+            '#F59E0B',
+            '#38BDF8',
+            '#EF4444',
+            '#A855F7'
+          ],
+          borderColor: '#111C35',
+          borderWidth: 3,
+          hoverOffset: 6
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: '70%',
+        plugins: {
+          legend: {
+            position: 'right',
+            labels: {
+              color: '#94A3B8',
+              font: {
+                family: 'Plus Jakarta Sans',
+                size: 11
+              },
+              boxWidth: 12,
+              padding: 14
+            }
+          },
+          tooltip: {
+            backgroundColor: '#1E2742',
+            titleColor: '#F8FAFC',
+            bodyColor: '#F8FAFC',
+            borderColor: '#2B416D',
+            borderWidth: 1,
+            padding: 10
+          }
+        }
+      }
+    });
+  });
+</script>
 {% endif %}
-
-<div class="actions">
-  <a class="btn" href="{{ url_for('main.upload') }}">Import Transactions</a>
-  <a class="btn" href="{{ url_for('main.results') }}">View Results</a>
-  <a class="btn" href="{{ url_for('main.report_pdf') }}">Export PDF</a>
-  <a class="btn" href="{{ url_for('main.report_csv') }}">Export CSV</a>
-  <form method="post" action="{{ url_for('main.reset_data') }}" onsubmit="return confirm('Clear all data?');" style="display:inline;">
-    <button class="btn btn-danger" type="submit">Reset Data</button>
-  </form>
-</div>
 {% endblock %}
