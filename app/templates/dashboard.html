@@ -25,58 +25,6 @@
   </div>
 </div>
 
-<!-- OOP ARCHITECTURE DEFENSE SHOWCASE -->
-<div class="defense-oop-banner">
-  <div class="defense-header" onclick="const g = document.getElementById('oopGrid'); g.style.display = g.style.display === 'none' ? 'grid' : 'none';">
-    <div style="display:flex; align-items:center; gap:8px;">
-      <span class="defense-badge">SIWES Defense</span>
-      <strong style="font-size:1.05rem; letter-spacing:-0.01em;">Object-Oriented Architecture (4 Core Principles in this Project)</strong>
-    </div>
-    <span style="font-size:0.75rem; color:var(--brand-primary); font-weight:600;">[Click to Toggle Details]</span>
-  </div>
-
-  <div class="oop-grid" id="oopGrid">
-    <div class="oop-card oop-encap">
-      <div class="oop-title">
-        <span>1. Encapsulation</span>
-        <span class="oop-class-tag">Transaction &amp; Result</span>
-      </div>
-      <p class="oop-desc">
-        Data integrity is guarded in <code>Transaction</code> &amp; <code>ReconciliationResult</code> models. Internal states, foreign keys, and audit attributes are protected from raw tampering.
-      </p>
-    </div>
-
-    <div class="oop-card oop-abstr">
-      <div class="oop-title">
-        <span>2. Abstraction</span>
-        <span class="oop-class-tag">MatchRule(ABC)</span>
-      </div>
-      <p class="oop-desc">
-        The abstract base class defines a standard <code>evaluate()</code> interface contract. The engine never needs to know specific matching mechanics.
-      </p>
-    </div>
-
-    <div class="oop-card oop-inher">
-      <div class="oop-title">
-        <span>3. Inheritance</span>
-        <span class="oop-class-tag">Derived Rules</span>
-      </div>
-      <p class="oop-desc">
-        Specialized rule classes (<code>ExactMatchRule</code>, <code>AmountMismatchRule</code>, <code>CurrencyMismatchRule</code>, <code>DateMismatchRule</code>) inherit structure from <code>MatchRule</code>.
-      </p>
-    </div>
-
-    <div class="oop-card oop-polym">
-      <div class="oop-title">
-        <span>4. Polymorphism</span>
-        <span class="oop-class-tag">Strategy Pattern</span>
-      </div>
-      <p class="oop-desc">
-        The <code>Reconciler</code> executes different rule instances through dynamic dispatch: calling <code>rule.evaluate()</code> polymorphically at runtime.
-      </p>
-    </div>
-  </div>
-</div>
 
 <!-- STATS CARDS -->
 <div class="stats-grid">
