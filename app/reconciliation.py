@@ -43,7 +43,9 @@ class ExactMatchRule(MatchRule):
 
     def evaluate(self, ho_txn, branch_txn):
         diff = round(abs(ho_txn.amount - branch_txn.amount), 2)
-        if diff <= self.tolerance and ho_txn.currency == branch_txn.currency:
+               if (diff <= self.tolerance
+                and ho_txn.currency == branch_txn.currency
+                and ho_txn.transaction_date == branch_txn.transaction_date):
             return RuleResult(
                 status=ReconciliationResult.STATUS_RECONCILED,
                 amount_difference=diff,
@@ -53,18 +55,20 @@ class ExactMatchRule(MatchRule):
 
 
 class AmountMismatchRule(MatchRule):
-    """Reference matches, amount differs -> AMOUNT_MISMATCH."""
+    """Reference matches, amount differs beyond tolerance -> AMOUNT_MISMATCH."""
+
+    def __init__(self, tolerance: float = 0.0):
+        self.tolerance = tolerance
 
     def evaluate(self, ho_txn, branch_txn):
         diff = round(abs(ho_txn.amount - branch_txn.amount), 2)
-        if diff > 0:
+        if diff > self.tolerance:
             return RuleResult(
                 status=ReconciliationResult.STATUS_AMOUNT_MISMATCH,
                 amount_difference=diff,
                 details=f"Head Office: {ho_txn.amount}, Branch: {branch_txn.amount}",
             )
         return None
-
 
 class CurrencyMismatchRule(MatchRule):
     """Reference and amount match, currency differs -> CURRENCY_MISMATCH."""
@@ -97,9 +101,9 @@ class Reconciler:
         # Priority order matters: first applicable rule wins.
         self.rules = [
             ExactMatchRule(tolerance=tolerance),
+            AmountMismatchRule(tolerance=tolerance),
             CurrencyMismatchRule(),
             DateMismatchRule(),
-            AmountMismatchRule(),
         ]
 
     def run(self) -> dict:
@@ -119,16 +123,18 @@ class Reconciler:
             ho_group = ho_by_ref.get(ref, [])
             branch_group = branch_by_ref.get(ref, [])
 
-            # Duplicate detection within a single source.
+                        # Duplicate detection within a single source.
+            has_duplicates = False
             if len(ho_group) > 1:
                 self._record_duplicates(ref, ho_group)
                 summary[ReconciliationResult.STATUS_DUPLICATE] += len(ho_group)
-                ho_group = ho_group[:1]
+                has_duplicates = True
             if len(branch_group) > 1:
                 self._record_duplicates(ref, branch_group)
                 summary[ReconciliationResult.STATUS_DUPLICATE] += len(branch_group)
-                branch_group = branch_group[:1]
-
+                has_duplicates = True
+            if has_duplicates:
+                continue  # held for manual review, never auto-reconciled
             if ho_group and branch_group:
                 result = self._evaluate_pair(ho_group[0], branch_group[0])
                 summary[result.status] += 1
