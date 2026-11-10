@@ -20,7 +20,7 @@ def seed_demo():
 
 @main_bp.route("/")
 def dashboard():
-    total_txns = Transaction.query.count()
+    total_raw_txns = Transaction.query.count()
     results = ReconciliationResult.query.all()
 
     counts = {
@@ -31,15 +31,19 @@ def dashboard():
         "missing": sum(1 for r in results if r.status == ReconciliationResult.STATUS_MISSING),
         "duplicate": sum(1 for r in results if r.status == ReconciliationResult.STATUS_DUPLICATE),
     }
-    total_results = len(results) or 1
-    reconciliation_rate = round(counts["reconciled"] / total_results * 100, 1)
+    total_results = len(results)
+    reconciliation_rate = round(counts["reconciled"] / (total_results or 1) * 100, 1)
+
+    # When results exist, total_txns represents total reconciled items matching the breakdown sum
+    total_txns = total_results if total_results > 0 else total_raw_txns
 
     return render_template(
         "dashboard.html",
         total_txns=total_txns,
+        total_raw_txns=total_raw_txns,
         counts=counts,
         reconciliation_rate=reconciliation_rate,
-        has_results=len(results) > 0,
+        has_results=total_results > 0,
     )
 
 

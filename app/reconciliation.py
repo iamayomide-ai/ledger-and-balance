@@ -43,7 +43,7 @@ class ExactMatchRule(MatchRule):
 
     def evaluate(self, ho_txn, branch_txn):
         diff = round(abs(ho_txn.amount - branch_txn.amount), 2)
-               if (diff <= self.tolerance
+        if (diff <= self.tolerance
                 and ho_txn.currency == branch_txn.currency
                 and ho_txn.transaction_date == branch_txn.transaction_date):
             return RuleResult(
