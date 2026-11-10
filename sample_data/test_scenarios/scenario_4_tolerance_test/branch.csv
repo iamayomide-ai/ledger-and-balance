@@ -1,0 +1,5 @@
+reference_number,account_number,customer_name,branch,amount,currency,narration,transaction_date
+TXN5001,005001,Samuel Akpabio,Victoria Island,10000.00,NGN,Invoice 101,2026-08-20
+TXN5002,005002,Titilayo Davies,Ikeja,20005.00,NGN,Invoice 102 (₦5 diff),2026-08-20
+TXN5003,005003,Usman Danfodio,Surulere,30045.00,NGN,Invoice 103 (₦45 diff),2026-08-21
+TXN5004,005004,Victor Moses,Apapa,40150.00,NGN,Invoice 104 (₦150 diff),2026-08-21

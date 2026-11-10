@@ -1,0 +1,4 @@
+reference_number,account_number,customer_name,branch,amount,currency,narration,transaction_date
+TXN3001,003001,Kolawole Adams,Victoria Island,12000.00,NGN,Transfer In,2026-08-10
+TXN3002,003002,Mariam Alabi,Ikeja,35000.00,NGN,Contract Settlement,2026-08-10
+TXN3003,003003,Nnamdi Kanu,Surulere,8500.00,NGN,Airtime Purchase,2026-08-11

@@ -1,0 +1,6 @@
+reference_number,account_number,customer_name,branch,amount,currency,narration,transaction_date
+TXN2001,002001,Adeola Williams,Victoria Island,15000.00,NGN,Direct Deposit,2026-08-01
+TXN2002,002002,Babajide Sanwo,Ikeja,28500.00,NGN,Vendor Payment,2026-08-01
+TXN2003,002003,Chioma Okoli,Surulere,7200.50,NGN,Utility Bill,2026-08-02
+TXN2004,002004,Danjuma Mohammed,Apapa,45000.00,NGN,Salary Transfer,2026-08-02
+TXN2005,002005,Eunice Bassey,Yaba,9100.00,NGN,POS Settlement,2026-08-03

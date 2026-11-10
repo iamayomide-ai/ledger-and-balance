@@ -1,0 +1,4 @@
+reference_number,account_number,customer_name,branch,amount,currency,narration,transaction_date
+TXN4001,004001,Oluwaseun Bakare,Victoria Island,20200.00,NGN,Cash Deposit,2026-08-15
+TXN4002,004002,Peter Obi,Ikeja,18500.00,NGN,POS Settlement,2026-08-15
+TXN4999,004999,Rashidat Bello,Apapa,14000.00,NGN,Web Transfer,2026-08-16
